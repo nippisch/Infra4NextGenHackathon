@@ -14,11 +14,11 @@ table(combined$w1sq16)
 install.packages("psych")   # Only run once
 library(psych)
 
-subdata_alpha <- combined |> 
+subdata_alpha <- relevant |> 
   select(w2eq11, w2eq12, w2eq13, w2eq14) |> 
   mutate(across(everything(), ~na_if(., 9)))
 
-subdata_alpha <- combined |> 
+subdata_alpha <- relevant |> 
   select(w2eq11, w2eq13)
 
 subdata_alpha_perceptions <- combined |> 
@@ -27,7 +27,7 @@ subdata_alpha_perceptions <- combined |>
   mutate(across(everything(), ~na_if(., 9)))
 
 
-alpha(subdata_alpha_perceptions)
+alpha(subdata_alpha)
 
 vars <- c("w2eq1", "w2eq11", "w2eq12", "w1eq10")
 

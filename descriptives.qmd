@@ -1,0 +1,117 @@
+---
+title: "descriptives"
+author: "Anna Fuchs, Niklas Ippisch"
+format: html
+---
+
+# Preperation
+```{r}
+library(tidyverse)
+library(ggpubr)
+relevant <- read_rds(file = "data/relevant_recoded.R")
+```
+
+
+# Descriptives
+
+## Independent variable: In favour or against increasing spending on social assistance on the poor (w2eq13)
+```{r}
+relevant |> 
+  filter(!is.na(w2eq13)) |> 
+  ggplot(aes(x = w2eq13)) +
+  geom_bar()
+```
+
+
+
+## Independent variable: Income inequality in country increased or decreased past 5 years (w2eq1)
+```{r}
+relevant |> 
+  filter(!is.na(w2eq1)) |> 
+  ggplot(aes(x = w2eq1)) +
+  geom_bar()
+```
+
+```{r}
+eq1_byage <- relevant |> 
+  filter(!is.na(w2eq1) & !is.na(age)) |> 
+  group_by(age) |> 
+  summarize(mean = mean(w2eq1, na.rm = TRUE)) |> 
+  ggplot(aes(x = age, y = mean)) +
+  geom_point()
+
+eq1_bygendr <- relevant |> 
+  filter(!is.na(w2eq1) & !is.na(female)) |> 
+  ggplot(aes(x = w2eq1, fill = factor(female))) +
+  geom_bar(position = "dodge")
+
+eq1_byincome <- relevant |> 
+  filter(!is.na(w2eq1) & !is.na(hinctnta)) |> 
+  group_by(hinctnta) |> 
+  summarize(mean = mean(w2eq1, na.rm = TRUE)) |> 
+  ggplot(aes(x = hinctnta, y = mean)) +
+  geom_point()
+
+eq1_byedu <- relevant |> 
+  filter(!is.na(w2eq1) & !is.na(eduyrs)) |> 
+  group_by(eduyrs) |> 
+  summarize(mean = mean(w2eq1, na.rm = TRUE)) |> 
+  ggplot(aes(x = eduyrs, y = mean)) +
+  geom_point()
+ggarrange(eq1_byage, eq1_bygendr, eq1_byincome, eq1_byedu, nrow = 2, ncol = 2)
+```
+
+# Correlation analyses
+
+Correlation between the support on spending on social assistance and perceived inequality
+
+From here it's just playing around
+
+```{r}
+relevant |> 
+  filter(!is.na(w2eq13) & !is.na(w2eq1)) |> 
+  group_by(w2eq1) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = w2eq1, y = mean)) +
+  geom_point()
+```
+
+```{r}
+cor1 <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(w2eq1))
+
+cor(cor1$w2eq13, cor1$w2eq1, method = "spearman") # -0.117
+
+m1 <- lm(w2eq13 ~ w2eq1, data = relevant)
+summary(m1)
+
+```
+
+```{r}
+
+m2 <- lm(w2eq13 ~ w2eq1 + w1eq10 + w1eq3, data = relevant)
+summary(m2)
+```
+
+```{r}
+m3 <- lm(w2eq13 ~ w2eq1 + age + gndr + hinctnta + eduyrs, data = relevant)
+summary(m3)
+```
+
+```{r}
+relevant1 <- relevant |> 
+  filter(w2eq13 != 3 & w2eq1 != 3) |> 
+  mutate(policy_bin = ifelse(w2eq13 == 1 | w2eq13 == 2, 1, 0),
+         income_bin = ifelse(w2eq1 == 5 | w2eq1 == 4, 1, 0))
+table(relevant1$policy_bin, relevant1$income_bin)
+chisq.test(relevant1$policy_bin, relevant1$income_bin)
+```
+
+```{r}
+m4 <- glm(policy_bin ~ income_bin, data = relevant1, family = "binomial")
+summary(m4)
+
+m5 <- glm(policy_bin ~ income_bin + age + gndr + hinctnta + eduyrs, data = relevant1, family = "binomial")
+summary(m5)
+```
+
