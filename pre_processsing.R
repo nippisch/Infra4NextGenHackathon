@@ -45,6 +45,7 @@ relevant_vars <- c("w2eq1", # income inequality increased or decresed past 5 yea
                    "w1eq10", # Importance of hard work for getting ahead in life (5: not important at all)
                    "w1eq3", # Tension between poor and rich people in country (4: a lot of tension)
                    "w1eq15", # Reducing differences in income is government's responsibility (10: entirely government's responsibility)
+                   "w1eq8", # Feelings towards differences in wealth between rich and poor in country (10: extremely angry)
                    "idno", # Respondent's identification number
                    "cntry", # Country
                    "age", # Age
@@ -74,6 +75,7 @@ relevant <- relevant |>
          w1eq10 = na_if(w1eq10, 9),
          w1eq3 = na_if(w1eq3, 9),
          w1eq15 = na_if(w1eq15, 99),
+         w1eq8 = na_if(w1eq8, 99),
          age = na_if(age, 999),
          gndr = na_if(gndr, 9),
          eduyrs = na_if(eduyrs, 77),

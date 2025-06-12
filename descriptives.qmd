@@ -14,7 +14,7 @@ relevant <- read_rds(file = "data/relevant_recoded.R")
 
 # Descriptives
 
-## Independent variable: In favour or against increasing spending on social assistance on the poor (w2eq13)
+## Dependent variable: In favour or against increasing spending on social assistance on the poor (w2eq13)
 ```{r}
 relevant |> 
   filter(!is.na(w2eq13)) |> 
@@ -22,6 +22,86 @@ relevant |>
   geom_bar()
 ```
 
+Influence of control variables
+
+```{r}
+# Control variable: Age
+eq13_byage <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(age)) |> 
+  group_by(age) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = age, y = mean)) +
+  geom_point()+
+  ylim(1, 5)
+
+# Control variable: Gender
+eq13_bygendr <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(female)) |> 
+  ggplot(aes(x = w2eq13, fill = factor(female))) +
+  geom_bar(position = "dodge")
+
+# Control variable: Income percentile
+eq13_byincome <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(hinctnta)) |> 
+  group_by(hinctnta) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = hinctnta, y = mean)) +
+  geom_point() +
+  ylim(1, 5)
+
+# Control variable: Education years
+eq13_byedu <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(eduyrs)) |> 
+  group_by(eduyrs) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = eduyrs, y = mean)) +
+  geom_point()+
+  ylim(1, 5)
+ggarrange(eq13_byage, eq13_bygendr, eq13_byincome, eq13_byedu, nrow = 2, ncol = 2)
+```
+
+Influence of possible other variables
+
+```{r}
+# Possible other influencing variable: Meritocratic beliefs (hard work important for success, w1eq10)
+eq13_bymerit <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(w1eq10)) |> 
+  group_by(w1eq10) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = w1eq10, y = mean)) +
+  geom_point() +
+  ylim(1, 5)
+
+# Possible other influencing variable: tension between rich and poor people, w1eq3
+eq13_bytension <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(w1eq3)) |> 
+  group_by(w1eq3) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = w1eq3, y = mean)) +
+  geom_point() +
+  ylim(1, 5)
+
+# Possible other influencing variable: reducing differences is in government's responsibility, w1eq15
+eq13_bygov <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(w1eq15)) |> 
+  group_by(w1eq15) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = w1eq15, y = mean)) +
+  geom_point() +
+  ylim(1, 5)
+
+# Possible other influencing variable: how angry about wealth(!) differences, w1eq8
+eq13_byangry <- relevant |> 
+  filter(!is.na(w2eq13) & !is.na(w1eq8)) |> 
+  group_by(w1eq8) |> 
+  summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
+  ggplot(aes(x = w1eq8, y = mean)) +
+  geom_point() +
+  ylim(1, 5)
+
+ggarrange(eq13_bymerit, eq13_bytension, eq13_bygov, eq13_byangry, nrow = 2, ncol = 2)
+
+```
 
 
 ## Independent variable: Income inequality in country increased or decreased past 5 years (w2eq1)
@@ -33,31 +113,38 @@ relevant |>
 ```
 
 ```{r}
+# Control variable: Age
 eq1_byage <- relevant |> 
   filter(!is.na(w2eq1) & !is.na(age)) |> 
   group_by(age) |> 
   summarize(mean = mean(w2eq1, na.rm = TRUE)) |> 
   ggplot(aes(x = age, y = mean)) +
-  geom_point()
+  geom_point() +
+  ylim(1, 5)
 
+# Control variable: Gender
 eq1_bygendr <- relevant |> 
   filter(!is.na(w2eq1) & !is.na(female)) |> 
   ggplot(aes(x = w2eq1, fill = factor(female))) +
   geom_bar(position = "dodge")
 
+# Control variable: Income decentile
 eq1_byincome <- relevant |> 
   filter(!is.na(w2eq1) & !is.na(hinctnta)) |> 
   group_by(hinctnta) |> 
   summarize(mean = mean(w2eq1, na.rm = TRUE)) |> 
   ggplot(aes(x = hinctnta, y = mean)) +
-  geom_point()
+  geom_point() +
+  ylim(1, 5)
 
+# Control variable: Education years
 eq1_byedu <- relevant |> 
   filter(!is.na(w2eq1) & !is.na(eduyrs)) |> 
   group_by(eduyrs) |> 
   summarize(mean = mean(w2eq1, na.rm = TRUE)) |> 
   ggplot(aes(x = eduyrs, y = mean)) +
-  geom_point()
+  geom_point() +
+  ylim(1, 5)
 ggarrange(eq1_byage, eq1_bygendr, eq1_byincome, eq1_byedu, nrow = 2, ncol = 2)
 ```
 
@@ -73,7 +160,8 @@ relevant |>
   group_by(w2eq1) |> 
   summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
   ggplot(aes(x = w2eq1, y = mean)) +
-  geom_point()
+  geom_point() +
+  ylim(1, 5)
 ```
 
 ```{r}
