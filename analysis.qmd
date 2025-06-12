@@ -1,0 +1,64 @@
+---
+title: "analysis"
+author: "Anna Fuchs, Niklas Ippisch"
+format: html
+---
+
+# Binary Regression
+
+Preperation:
+
+```{r}
+relevant <- read_rds(file = "data/relevant_recoded.R")
+
+countries <- c("AT", "BE", "CZ", "FI", "FR", "GB", "HU", "IS", "PL", "PT", "SI")
+
+relevant_bin <- relevant |> 
+  filter(w2eq13 != 3 & w2eq1 != 3) |> 
+  mutate(policy_bin = ifelse(w2eq13 == 1 | w2eq13 == 2, 1, 0), # 1 if a person is in favor of the policy
+         income_bin = ifelse(w2eq1 == 5 | w2eq1 == 4, 1, 0)) # 1 if a person thinks the inequality increased
+
+results <- list()
+
+for(i in 1:length(countries)){
+  
+  reg_data <- relevant_bin |> 
+    filter(cntry == countries[i])
+  
+  model <- glm(policy_bin ~ income_bin, data = reg_data, family = "binomial")
+  
+  sum <- broom::tidy(model)
+  
+  beta <- sum$estimate[sum$term == "income_bin"]
+  
+  p <- sum$p.value[sum$term == "income_bin"]
+  
+  sd <- sum$std.error[sum$term == "income_bin"]
+  
+  sig <- ifelse(p < 0.05, 1, 0)
+  
+  cntry <- countries[i]
+  
+  results[[i]] <- data.frame(
+    cntry = cntry,
+    beta = beta,
+    sd = sd,
+    p = p,
+    sig = sig
+  )
+  
+}
+
+final <- do.call(rbind, results)
+```
+
+Graph
+
+```{r}
+final |> 
+  ggplot(aes(x = beta, y = reorder(cntry, beta))) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = beta - 1.96*sd, xmax = beta + 1.96*sd), height = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed")
+```
+

@@ -14,11 +14,33 @@ relevant <- read_rds(file = "data/relevant_recoded.R")
 
 # Descriptives
 
+```{r}
+relevant |> 
+  filter(w2eq1 == 3 & eisced != 55) |> 
+  ggplot(aes(x = hinctnta)) +
+  geom_bar()
+```
+
+```{r}
+relevant |> 
+  filter(is.na(w2eq13)) |> 
+  ggplot(aes(x = eduyrs)) +
+  geom_bar()
+```
+
+
 ## Dependent variable: In favour or against increasing spending on social assistance on the poor (w2eq13)
 ```{r}
 relevant |> 
   filter(!is.na(w2eq13)) |> 
   ggplot(aes(x = w2eq13)) +
+  geom_bar()
+```
+
+```{r}
+relevant |> 
+  filter(!is.na(w2eq11)) |> 
+  ggplot(aes(x = w2eq11)) +
   geom_bar()
 ```
 
@@ -51,10 +73,10 @@ eq13_byincome <- relevant |>
 
 # Control variable: Education years
 eq13_byedu <- relevant |> 
-  filter(!is.na(w2eq13) & !is.na(eduyrs)) |> 
-  group_by(eduyrs) |> 
+  filter(!is.na(w2eq13) & !is.na(eisced) & eisced != 55) |> 
+  group_by(eisced) |> 
   summarize(mean = mean(w2eq13, na.rm = TRUE)) |> 
-  ggplot(aes(x = eduyrs, y = mean)) +
+  ggplot(aes(x = eisced, y = mean)) +
   geom_point()+
   ylim(1, 5)
 ggarrange(eq13_byage, eq13_bygendr, eq13_byincome, eq13_byedu, nrow = 2, ncol = 2)
