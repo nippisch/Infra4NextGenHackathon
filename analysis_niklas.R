@@ -51,3 +51,47 @@ austria |>
   select(starts_with("w2eq") | starts_with("w1eq")) |> 
   summarize(across(everything(), ~sum(is.na(.)), .names = "na_{.col}"))
 
+table(relevant$cntry)
+
+relevant <- read_rds(file = "data/relevant_recoded.R")
+
+countries <- c("AT", "BE", "CZ", "FI", "FR", "GB", "HU", "IS", "PL", "PT", "SI")
+
+results <- list()
+
+for(i in 1:length(countries)){
+  
+  reg_data <- relevant |> 
+    filter(cntry == countries[i])
+  
+  model <- lm(w2eq13 ~ w2eq1, data = reg_data)
+  
+  sum <- broom::tidy(model)
+  
+  beta <- sum$estimate[sum$term == "w2eq1"]
+  
+  p <- sum$p.value[sum$term == "w2eq1"]
+  
+  sd <- sum$std.error[sum$term == "w2eq1"]
+  
+  sig <- ifelse(p < 0.05, 1, 0)
+  
+  cntry <- countries[i]
+  
+  results[[i]] <- data.frame(
+    cntry = cntry,
+    beta = beta,
+    sd = sd,
+    p = p,
+    sig = sig
+  )
+  
+}
+
+final <- do.call(rbind, results)
+
+final |> 
+  ggplot(aes(x = beta, y = reorder(cntry, beta))) +
+  geom_point() +
+  geom_errorbarh(aes(xmin = beta - 1.96*sd, xmax = beta + 1.96*sd), height = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed")
