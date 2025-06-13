@@ -1,9 +1,11 @@
 # analysis Anna
 
 library(readr)
+library(readxl)
 library(survey)
 library(srvyr)
 library(ggplot2)
+library(tidyr)
 library(dplyr)
 library(scales)
 library(showtext)
@@ -12,6 +14,76 @@ library(ggrounded)
 font_add_google("Montserrat", "montserrat")
 
 relevant <- read_rds(file = "data/relevant_recoded.R")
+
+
+# Figure 1 ----
+
+wid_data <- read_excel("WID_Data_13062025-143407.xlsx")
+
+colnames(wid_data) <- c("percentile", "year", "FR - France", "GB - United Kingdom",
+                        "AT - Austria", "BE - Belgium", "CZ - Czechia", "FI - Finland",
+                        "HU - Hungary", "IS - Iceland", "PL - Poland", "PT - Portugal",
+                        "SI - Slovenia")
+
+country_colours <- c("AT - Austria" = "#332288",
+                     "BE - Belgium" = "#88CCEE",
+                     "CZ - Czechia" = "#6699CC",
+                     "FI - Finland" = "#117733",
+                     "FR - France" = "#999933",
+                     "GB - United Kingdom" = "#DDCC77", 
+                     "HU - Hungary" = "#CC6677",
+                     "IS - Iceland" = "#AA4499",
+                     "PL - Poland" = "#D55E00",
+                     "PT - Portugal" = "#661100", 
+                     "SI - Slovenia" = "#44AA99")
+
+
+wid_data_long <- wid_data %>%
+  select(-percentile) %>%
+  pivot_longer(
+    cols = -year,
+    names_to  = "country",
+    values_to = "gini"
+  )
+
+wid_data_long %>%
+  ggplot(aes(x = year, y = gini, colour = country)) +
+  geom_smooth(method = "loess",
+              se = FALSE,
+              span = 0.2,
+              size = 1.2) +
+  scale_colour_manual(values = country_colours) +
+  scale_y_continuous(limits = c(0.3, 0.55), expand = c(0,0)) +
+  scale_x_continuous(limits = c(1998, 2023), expand = c(0,0)) +
+  labs(
+    title = NULL,
+    x     = NULL,
+    y     = "Gini coefficient",
+    colour = NULL
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.minor       = element_blank(),
+    panel.grid.major       = element_line(colour = "grey90"),
+    legend.position        = "bottom",
+    plot.title             = element_text(face = "bold", hjust = 0.5)
+  ) +
+  theme_linedraw() +
+  theme(# panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+    panel.background = element_rect(fill = 'white', colour = 'white'),
+    plot.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
+    legend.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
+    legend.key = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
+    axis.text.x = element_text(colour = "#22444b", size = 14),
+    axis.text.y = element_text(colour = "#22444b", size = 14),
+    axis.title.y = element_text(colour = "#22444b", size = 20),
+    legend.text = element_text(colour = "#22444b", size = 14),
+    legend.position = "bottom",
+    legend.box = "horizontal")
+
+
+
+
 
 # Figure 2 ----
 svy_dat <- relevant %>%
@@ -50,9 +122,9 @@ svy_pct <- svy_dat %>%
 
 ggplot(svy_pct, aes(x = w2eq13, y = pct)) +
   geom_col_rounded(fill = "#AB110F") +
-  geom_text(aes(label = paste(round(pct * 100, 0), "%")), position = position_dodge(0.9), vjust = 2, size = 4, color = "white") +
+  geom_text(aes(label = paste(round(pct * 100, 0), "%")), position = position_dodge(0.9),
+            vjust = 2, size = 4, color = "white") +
   # geom_errorbar(aes(ymin = pct_low, ymax = pct_upp), width = 0.2) +
-  
   scale_y_continuous(labels = percent_format(accuracy = 1),
                      limits = c(0, 0.4),
                      breaks = seq(0, 0.4, by = 0.1),
@@ -76,10 +148,13 @@ ggplot(svy_pct, aes(x = w2eq13, y = pct)) +
   theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
         panel.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
         plot.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
-        axis.text.x = element_text(colour="#22444b"),
-        axis.text.y = element_text(colour="#22444b"))
+        axis.text.x = element_text(colour = "#22444b"),
+        axis.text.y = element_text(colour = "#22444b"),
+        axis.title.y = element_text(colour = "#22444b"))
 
-# Figure 3
+
+
+# Figure 3 ----
 ## Binary Regression with weighted data
 relevant    <- read_rds("data/relevant_recoded.R")
 
@@ -103,6 +178,8 @@ results_svy <- nested %>%
     model  = map(design,  ~ svyglm(policy_bin ~ income_bin,
                                    design = .x,
                                    family = quasibinomial())),
+    # in svyglm for binomial and poisson you have to use quasibinomial() to aviod a warning about non-integer
+    ## numbers of successes. The quasi version of the family objects give the same point estimates and st. errors
     tidy   = map(model,   ~ broom::tidy(.x) %>% filter(term == "income_bin"))
   ) %>%
   select(cntry, tidy) %>%
@@ -147,9 +224,9 @@ results_svy %>%
                
     )
   ) +
-  theme_minimal() +
-  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
+  theme_linedraw() +
+  theme(# panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = 'white', colour = 'white'),
         plot.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
         axis.text.x = element_text(colour="#22444b"),
         axis.text.y = element_text(colour="#22444b"))
