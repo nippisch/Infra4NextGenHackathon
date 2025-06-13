@@ -18,7 +18,7 @@ relevant <- read_rds(file = "data/relevant_recoded.R")
 
 # Figure 1 ----
 
-wid_data <- read_excel("WID_Data_13062025-143407.xlsx")
+wid_data <- read_excel("data/WID_Data_13062025-143407.xlsx")
 
 colnames(wid_data) <- c("percentile", "year", "FR - France", "GB - United Kingdom",
                         "AT - Austria", "BE - Belgium", "CZ - Czechia", "FI - Finland",
