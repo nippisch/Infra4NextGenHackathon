@@ -10,6 +10,7 @@ library(dplyr)
 library(scales)
 library(showtext)
 library(ggrounded)
+library(purrr)
 
 font_add_google("Montserrat", "montserrat")
 
@@ -192,6 +193,23 @@ results_svy <- nested %>%
     sig  = ifelse(p < 0.05, 1L, 0L)
   )
 
+results_svy <- results_svy %>%
+  arrange(desc(beta)) %>%
+  mutate(cntry = factor(cntry, levels = cntry))
+
+country_labels <- c(
+  "SI" = "SI - Slovenia",
+  "AT" = "AT - Austria",
+  "IS" = "IS - Iceland",
+  "FI" = "FI - Finland",
+  "GB" = "GB - United Kingdom",
+  "FR" = "FR - France",
+  "PL" = "PL - Poland",
+  "CZ" = "CZ - Czechia",
+  "BE" = "BE - Belgium",
+  "HU" = "HU - Hungary",
+  "PT" = "PT - Portugal"
+)
 
 results_svy %>%
   ggplot(aes(x = beta, y = reorder(cntry, beta))) +
@@ -206,27 +224,14 @@ results_svy %>%
     y = "",
     title = ""
   ) +
-  scale_x_continuous(limits = c(-1.5, 2.5),
-                     breaks = seq(-1.5, 2.5, by = 1),
+  scale_x_continuous(limits = c(-2.5, 2.5),
+                     breaks = seq(-2.5, 2.5, by = 1),
                      expand = c(0,0.1)) +
   scale_y_discrete(
-    labels = c("SI - Slovenia",
-               "AT - Austria",
-               "IS - Iceland",
-               "FI - Finland",
-               "GB - United Kingdom",
-               "FR - France",
-               "PL - Poland",
-               "CZ - Czechia",
-               "BE - Belgium",
-               "HU - Hungary",
-               "PT - Portugal"
-               
-    )
-  ) +
+    labels = country_labels) +
   theme_linedraw() +
-  theme(# panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
-        panel.background = element_rect(fill = 'white', colour = 'white'),
-        plot.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
-        axis.text.x = element_text(colour="#22444b"),
-        axis.text.y = element_text(colour="#22444b"))
+  theme(
+    panel.background = element_rect(fill = 'white', colour = 'white'),
+    plot.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
+    axis.text.x = element_text(colour="#22444b"),
+    axis.text.y = element_text(colour="#22444b"))
