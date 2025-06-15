@@ -328,5 +328,53 @@ results_svy_m2 %>%
 ```
 
 
+Possible addition: 'multiverse'-like plot for regression coefficients with different combinations of included covariates
+
+```{r}
+relevant_m1 <- relevant_m1 |> 
+  mutate(working = case_when(
+    mnactic %in% c(1, 2, 7, 8, 9) ~ 1,
+    mnactic %in% c(3, 4, 5, 6) ~ 0
+  ))
+
+results_all <- map_dfr(control_combos, function(vars) {
+  # Add country fixed effect
+  fml <- reformulate(c("income_bin", "cntry", vars), response = "policy_bin")
+  
+  # Get all variables needed in this model
+  needed_vars <- all.vars(fml)
+
+  # Filter relevant data
+  data_sub <- relevant_m1 %>%
+    select(all_of(needed_vars), w2weight) %>%
+    drop_na()
+
+  # Skip small samples
+  if (nrow(data_sub) < 300) return(NULL)
+
+  # Create survey design
+  design <- as_survey_design(data_sub, weights = w2weight)
+
+  # Try fitting model
+  tryCatch({
+    model <- svyglm(fml, design = design, family = quasibinomial())
+    broom::tidy(model) %>%
+      filter(term == "income_bin") %>%
+      mutate(controls = paste(vars, collapse = " + "))
+  }, error = function(e) {
+    NULL
+  })
+})
+
+ggplot(results_all, aes(x = estimate, y = reorder(controls, estimate))) +
+  geom_point(colour = "#AB110F", size = 1) +
+  geom_errorbarh(aes(xmin = estimate - 1.96*std.error, xmax = estimate + 1.96*std.error), 
+                 height = 0.3, colour = "#AB110F", size = 0.5) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(title = "",
+       x = "", y = "") +
+  theme_minimal() +
+  theme(axis.text.y = element_blank())
+```
 
 
