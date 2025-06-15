@@ -64,10 +64,11 @@ cor(relevant1$w2eq11, relevant1$w1eq10)
 relevant <- read_rds("data/relevant_recoded.R")
 
 relevant <- relevant |> 
-  mutate(w1eq10 = 6 - w1eq10)
+  mutate(w1eq10 = 6 - w1eq10) |> 
+  filter(eisced != 55)
 
 # Step 2: Define countries
-countries <- c("PT", "SI")
+countries <- c("HU", "CZ")
 
 # Step 3: Filter and create binary variables
 relevant_bin <- relevant %>%
@@ -87,11 +88,11 @@ nested <- relevant_bin %>%
 results_svy <- nested %>%
   mutate(
     design = map(data, ~ as_survey_design(.x, weights = w2weight)),
-    model  = map(design, ~ svyglm(policy_bin ~ income_bin + age + female + w1eq10 + w1eq8,
+    model  = map(design, ~ svyglm(policy_bin ~ income_bin + age + female + hinctnta + eisced + w1eq10 + w1eq8,
                                   design = .x,
                                   family = quasibinomial())),
     tidy   = map(model, ~ broom::tidy(.x) %>%
-                   filter(term %in% c("income_bin", "age", "female", "w1eq10", "w1eq8")))
+                   filter(term %in% c("income_bin", "age", "female", "hinctnta", "eisced", "w1eq10", "w1eq8")))
   ) %>%
   unnest(tidy) %>%
   transmute(
@@ -121,17 +122,22 @@ results_svy %>%
     title = "",
     color = "Country"
   ) +
-  scale_color_manual(
-    name = "Country",
-    values = c("PT" = "#1F77B4", "SI" = "#AB110F")
-  ) +
+  scale_x_continuous(limits = c(-2, 4),
+                     breaks = seq(-2, 4, by = 1),
+                     expand = c(0,0.1)) +
   scale_y_discrete(labels = c(
     "Age \n (in years)",
+    "Highest level \n of education \n (7: higher \n tertiary education)",
     "Female \n (1: Yes)",
+    "Income percentile \n (10: 10th percentile)",
     "Perceived \n income inequality \n (1: Increased)",
     "Importance of hard \n work to getting \n ahead in live \n (5: Essential)",
     "Feelings towards \n differences in wealth \n (10: extremely angry)"
   )) +
+  scale_color_manual(
+    name = "Country",
+    values = c("CZ" = "#1F77B4", "HU" = "#AB110F")
+  ) +
   theme_linedraw() +
   theme(
     panel.background = element_rect(fill = 'white', colour = 'white'),
@@ -161,7 +167,7 @@ nested <- relevant_bin %>%
 results_svy <- nested %>%
   mutate(
     design = map(data,    ~ as_survey_design(.x, weights = w2weight)),
-    model  = map(design,  ~ svyglm(policy_bin ~ income_bin+ age + female + w1eq10 + w1eq8 + hinctnta + eisced,
+    model  = map(design,  ~ svyglm(policy_bin ~ income_bin + age + female + w1eq10 + w1eq8 + hinctnta + eisced,
                                    design = .x,
                                    family = quasibinomial())),
     # in svyglm for binomial and poisson you have to use quasibinomial() to aviod a warning about non-integer
@@ -182,11 +188,11 @@ results_svy <- results_svy %>%
   mutate(cntry = factor(cntry, levels = cntry))
 
 country_labels <- c(
-  "SI" = "SI - Slovenia",
+  "SI" = "SI - Slovenia *",
   "AT" = "AT - Austria",
   "IS" = "IS - Iceland",
   "FI" = "FI - Finland",
-  "GB" = "GB - United Kingdom",
+  "GB" = "GB - United Kingdom *",
   "FR" = "FR - France",
   "PL" = "PL - Poland",
   "CZ" = "CZ - Czechia",
@@ -208,8 +214,8 @@ results_svy %>%
     y = "",
     title = ""
   ) +
-  scale_x_continuous(limits = c(-2.5, 4),
-                     breaks = seq(-2.5, 2.5, by = 1),
+  scale_x_continuous(limits = c(-4, 4),
+                     breaks = seq(-4, 4, by = 1),
                      expand = c(0,0.1)) +
   scale_y_discrete(
     labels = country_labels) +
@@ -219,4 +225,7 @@ results_svy %>%
     plot.background = element_rect(fill = '#FFF7F5', colour = '#FFF7F5'),
     axis.text.x = element_text(colour="#22444b"),
     axis.text.y = element_text(colour="#22444b"))
+
+wid_relevant <- wid_data_long |> 
+  filter(year == 2023)
 
