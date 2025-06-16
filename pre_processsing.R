@@ -2,15 +2,18 @@
 
 library(tidyverse)
 
+# loading raw datasets
 wave1 <- read_csv("data/CRON3W1e01.1.csv")
 wave2 <- read_csv("data/CRON3W2e01.1.csv")
 
+# combining datasets
 combined <- full_join(wave1, wave2, join_by(idno))
 
-write_rds(combined, file = "data/bothwaves_raw.R")
+#write_rds(combined, file = "data/bothwaves_raw.R")
 
-combined <- read_rds("data/bothwaves_raw.R")
+#combined <- read_rds("data/bothwaves_raw.R")
 
+# re-combining variables present in both datasets
 combined <- combined |> 
   mutate(cntry = ifelse(!is.na(cntry.x), cntry.x, cntry.y)) |> 
   mutate(age = ifelse(!is.na(age.x), age.x, age.y)) |> 
@@ -29,14 +32,16 @@ combined <- combined |>
   mutate(mode = ifelse(!is.na(mode.x), mode.x, mode.y)) |> 
   mutate(yrbrn = ifelse(!is.na(yrbrn.x), yrbrn.x, yrbrn.y))
 
+# removing double variables
 combined <- combined |> 
   select(-ends_with(".x")) |> 
   select(-ends_with(".y"))
 
-write_rds(combined, file = "data/bothwaves.R")
+# write_rds(combined, file = "data/bothwaves.R")
 
-combined <- read_rds(file = "data/bothwaves.R")
+# combined <- read_rds(file = "data/bothwaves.R")
 
+# selecting relevant variables
 relevant_vars <- c("w2eq1", # income inequality increased or decresed past 5 years (5: increased a lot)
                    "w2eq11", # in favour or against a basic income scheme (5: strongly against)
                    "w2eq12", # in favour or against increasing availability of good-quality childcare (5: strongly against)
@@ -63,9 +68,11 @@ relevant_vars <- c("w2eq1", # income inequality increased or decresed past 5 yea
                    "vote" # Voted last national election (1: yes, 2: no, 3: not eligible to vote)
 )
 
+# reducing dataset
 relevant <- combined |> 
   select(all_of(relevant_vars))
 
+# setting NA's
 relevant <- relevant |> 
   mutate(w2eq1 = na_if(w2eq1, 9),
          w2eq11 = na_if(w2eq11, 9),
@@ -105,6 +112,7 @@ relevant <- relevant |>
          vote = na_if(vote, 9)
          )
 
+# creating new variables
 relevant <- relevant |> 
   mutate(female = ifelse(gndr == 2, 1, 0), # setting male = 0, female = 1
          vote = ifelse(vote == 2, 0, ifelse(vote == 3, 2, vote))) # setting yes = 1, no = 0, not eligible = 2

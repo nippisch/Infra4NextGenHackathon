@@ -1,5 +1,5 @@
 ---
-title: "analysis"
+title: "Main Analysis"
 author: "Anna Fuchs, Niklas Ippisch"
 format: html
 ---
@@ -7,6 +7,9 @@ format: html
 Preparation
 
 ```{r}
+#| warning: false
+#| message: false
+# Loading relevant packages and data
 library(readr)
 library(readxl)
 library(survey)
@@ -28,6 +31,10 @@ relevant <- read_rds(file = "data/relevant_recoded.R")
 Figure 1
 
 ```{r}
+#| error: false
+#| waring: false
+#| message: false
+# loading external data
 wid_data <- read_excel("data/WID_Data_13062025-143407.xlsx")
 
 colnames(wid_data) <- c("percentile", "year", "FR - France", "GB - United Kingdom",
@@ -47,7 +54,7 @@ country_colours <- c("AT - Austria" = "#332288",
                      "PT - Portugal" = "#661100", 
                      "SI - Slovenia" = "#44AA99")
 
-
+# transforming the dataset for the graph
 wid_data_long <- wid_data %>%
   select(-percentile) %>%
   pivot_longer(
@@ -56,6 +63,7 @@ wid_data_long <- wid_data %>%
     values_to = "gini"
   )
 
+# create the graph
 wid_data_long %>%
   ggplot(aes(x = year, y = gini, colour = country)) +
   geom_smooth(method = "loess",
@@ -96,45 +104,37 @@ wid_data_long %>%
 Figure 2
 
 ```{r}
+# removing NA's and applying weights
 svy_dat <- relevant %>%
   filter(!is.na(w2eq13)) %>% 
-  as_survey_design(weights = w2weight) # declare survey design
+  as_survey_design(weights = w2weight)
 
-svy_summary <- svy_dat %>% # compute weighted counts for each category of w2eq13
+# compute weighted counts for each category of w2eq13
+svy_summary <- svy_dat %>% 
   group_by(w2eq13) %>%
   summarise(
-    weighted_n = survey_total(),             # weighted count
-    pct        = survey_mean(vartype = "ci") # weighted proportion + CI
+    weighted_n = survey_total(),             
+    pct        = survey_mean(vartype = "ci")
   )
 
-# plot of weighted counts
-ggplot(svy_summary, aes(x = w2eq13, y = weighted_n)) +
-  geom_col() +
-  labs(
-    x = "w2eq13 response",
-    y = "Weighted count",
-    title = "Weighted Distribution of w2eq13 (Wave 2)"
-  )
-
-
-# percentage plot
+# preperation for the percentage plot
 svy_pct <- svy_dat %>%
   group_by(w2eq13) %>%
   summarise(
-    wt_n     = survey_total(vartype = "ci"),    # weighted count + CI
+    wt_n     = survey_total(vartype = "ci"),
   ) %>%
   ungroup() %>%
   mutate(
-    pct      = wt_n / sum(wt_n),                # proportion
-    pct_low  = wt_n_low  / sum(wt_n),           # lower CI on proportion
-    pct_upp  = wt_n_upp  / sum(wt_n)            # upper CI on proportion
+    pct      = wt_n / sum(wt_n),
+    pct_low  = wt_n_low  / sum(wt_n),
+    pct_upp  = wt_n_upp  / sum(wt_n)
   )
 
+# creating the graph
 ggplot(svy_pct, aes(x = w2eq13, y = pct)) +
   geom_col_rounded(fill = "#AB110F") +
   geom_text(aes(label = paste(round(pct * 100, 0), "%")), position = position_dodge(0.9),
             vjust = 2, size = 4, color = "white") +
-  # geom_errorbar(aes(ymin = pct_low, ymax = pct_upp), width = 0.2) +
   scale_y_continuous(labels = percent_format(accuracy = 1),
                      limits = c(0, 0.4),
                      breaks = seq(0, 0.4, by = 0.1),
@@ -150,7 +150,6 @@ ggplot(svy_pct, aes(x = w2eq13, y = pct)) +
     )
   ) +
   labs(
-    #x     = "The state should increase the spending on social assistance on the poor",
     x = "",
     y     = "% of respondents"
   ) +
@@ -166,10 +165,12 @@ ggplot(svy_pct, aes(x = w2eq13, y = pct)) +
 Figure 3
 
 ```{r}
+# change the poling of relevant variables and removing 'Other' category
 relevant <- relevant |> 
   mutate(w1eq10 = 6 - w1eq10) |> 
   filter(eisced != 55)
 
+# creating new variables and removing middle categories
 relevant_noNA <- relevant %>%
   filter(w2eq13 != 3, w2eq1 != 3) %>%
   mutate(
@@ -178,18 +179,18 @@ relevant_noNA <- relevant %>%
   ) %>%
   filter(!is.na(policy_bin), !is.na(income_bin))
 
+# stating the survey design
 design_m1 <- as_survey_design(relevant_noNA, weights = w2weight)
 
-# Fit the model
+# fitting the model
 model_m1 <- svyglm(policy_bin ~ income_bin + age + female + hinctnta + eisced + w1eq10 + w1eq8,
                 design = design_m1,
                 family = quasibinomial())
 
-# Tidy and filter model results
+# tidying and filtering model results
 tidy_model_m1 <- broom::tidy(model_m1) %>%
   filter(term %in% c("income_bin", "age", "female", "hinctnta", "eisced", "w1eq10", "w1eq8"))
 
-# Format output
 results_svy_m1 <- tidy_model_m1 %>%
   transmute(
     term,
@@ -199,7 +200,7 @@ results_svy_m1 <- tidy_model_m1 %>%
     sig  = ifelse(p < 0.05, 1L, 0L)
   )
 
-# Step 6: Plot with error bars
+# creating the graph
 results_svy_m1 %>%
   mutate(term = forcats::fct_reorder(term, beta, .desc = FALSE)) %>%
   ggplot(aes(x = beta, y = term)) +
@@ -238,15 +239,19 @@ results_svy_m1 %>%
 Figure 4
 
 ```{r}
+# stating relevant country codes
 countries   <- c("AT","BE","CZ","FI","FR","GB","HU","IS","PL","PT","SI")
 
+# removing potentially wrong data
 relevant_m2 <- relevant_noNA %>%
   filter(cntry %in% countries)
 
+# nesting by country
 nested <- relevant_m2 %>%
   group_by(cntry) %>%
   nest()
 
+# creating the study design (incl. weights) and looping through countries
 results_svy_m2 <- nested %>%
   mutate(
     design = map(data,    ~ as_survey_design(.x, weights = w2weight)),
@@ -266,10 +271,12 @@ results_svy_m2 <- nested %>%
     sig  = ifelse(p < 0.05, 1L, 0L)
   )
 
+# arranging the results
 results_svy_m2 <- results_svy_m2 %>%
   arrange(desc(beta)) %>%
   mutate(cntry = factor(cntry, levels = cntry))
 
+# Changing labels
 country_labels <- c(
   "SI" = "SI - Slovenia *",
   "AT" = "AT - Austria",
@@ -284,6 +291,7 @@ country_labels <- c(
   "PT" = "PT - Portugal"
 )
 
+# creating the graph
 results_svy_m2 %>%
   ggplot(aes(x = beta, y = reorder(cntry, beta))) +
   geom_point(colour = "#AB110F", size = 3) +
