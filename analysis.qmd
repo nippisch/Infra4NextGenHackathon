@@ -240,7 +240,7 @@ Figure 4
 ```{r}
 countries   <- c("AT","BE","CZ","FI","FR","GB","HU","IS","PL","PT","SI")
 
-relevant_m2 <- relevant %>%
+relevant_m2 <- relevant_noNA %>%
   filter(cntry %in% countries)
 
 nested <- relevant_m2 %>%
